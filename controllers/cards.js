@@ -13,9 +13,7 @@ module.exports.getCards = (req, res) => {
 
 // Создать карточку;
 module.exports.createCard = (req, res) => {
-  cardModel.create(
-    { name: req.body.name, link: req.body.link, owner: req.user._id },
-  )
+  cardModel.create({ name: req.body.name, link: req.body.link, owner: req.user._id })
     .then((card) => {
       res.status(201).send({ cardId: card._id });
     })
