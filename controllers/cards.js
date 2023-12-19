@@ -13,12 +13,11 @@ module.exports.getCards = (req, res) => {
 
 // Создать карточку;
 module.exports.createCard = (req, res) => {
-  const { name, link } = req.body;
-
-  cardModel.create({ name, link, owner: req.user._id }, { new: true, runValidators: true })
+  cardModel.create(
+    { name: req.body.name, link: req.body.link, owner: req.user._id },
+  )
     .then((card) => {
-      console.log(card);
-      res.status(201).send({ id: card._id });
+      res.status(201).send({ cardId: card._id });
     })
     .catch((err) => {
       if (err.name === 'ValidationError') {

@@ -69,13 +69,14 @@ module.exports.changeUserProfile = (req, res) => {
 module.exports.changeUserAvatar = (req, res) => {
   userModel.findByIdAndUpdate(
     req.user._id,
-    { avatart: req.body.avatar },
+    { avatar: req.body.avatar },
     { new: true, runValidators: true },
   )
     .then((user) => {
       if (!user) {
         return res.status(404).send({ message: 'Пользователь с указанным _id не найден' });
       }
+      console.log(user.avatar);
       return res.status(200).send({ avatar: user.avatar });
     })
     .catch((err) => {
