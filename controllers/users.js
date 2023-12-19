@@ -52,15 +52,16 @@ module.exports.changeUserProfile = (req, res) => {
     { new: true, runValidators: true },
   )
     .then((user) => {
-      res.status(200).send({ data: user });
+      if (!user) {
+        return res.status(404).send({ message: 'Пользователь с указанным id не найден' });
+      }
+      return res.status(200).send({ data: user });
     })
     .catch((err) => {
       if (err.name === 'ValidationError') {
-        res.status(400).send({ message: 'Переданы некорректные данные при обновлении профиля' });
-      } else if (err.name === 'CastError') {
-        res.status(404).send({ message: 'Пользователь с указанным _id не найден' });
+        return res.status(400).send({ message: 'Переданы некорректные данные при обновлении профиля' });
       }
-      res.status(500).send({ message: 'Ошибка по умолчанию' });
+      return res.status(500).send({ message: 'Ошибка по умолчанию' });
     });
 };
 
@@ -72,14 +73,15 @@ module.exports.changeUserAvatar = (req, res) => {
     { new: true, runValidators: true },
   )
     .then((user) => {
-      res.status(200).send(user.avatar);
+      if (!user) {
+        return res.status(404).send({ message: 'Пользователь с указанным _id не найден' });
+      }
+      return res.status(200).send(user.avatar);
     })
     .catch((err) => {
       if (err.name === 'ValidationError') {
-        res.status(400).send({ message: 'Переданы некорректные данные при обновлении аватара' });
-      } else if (err.name === 'CastError') {
-        res.status(404).send({ message: 'Пользователь с указанным _id не найден' });
+        return res.status(400).send({ message: 'Переданы некорректные данные при обновлении аватара' });
       }
-      res.status(500).send({ message: 'Ошибка по умолчанию' });
+      return res.status(500).send({ message: 'Ошибка по умолчанию' });
     });
 };
