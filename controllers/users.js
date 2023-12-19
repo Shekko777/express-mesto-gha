@@ -15,13 +15,16 @@ module.exports.getUserById = (req, res) => {
 
   userModel.findById(id)
     .then((user) => {
-      res.status(200).send({ data: user });
+      if (!user) {
+        return res.status(404).send({ message: 'Пользователь по указанному _id не найден' });
+      }
+      return res.status(200).send(user);
     })
     .catch((err) => {
       if (err.name === 'CastError') {
-        return res.status(404).send({ message: 'Пользователь по указанному _id не найден' });
+        return res.status(400).send({ message: 'Пользователь по указанному _id не найден' });
       }
-      return res.status(500).send({ message: 'Oops: Ошибка на стороне сервера' });
+      return res.status(500).send({ message: 'Ошибка на стороне сервера' });
     });
 };
 
@@ -49,7 +52,7 @@ module.exports.changeUserProfile = (req, res) => {
     { new: true, runValidators: true },
   )
     .then((user) => {
-      res.status(200).send(user);
+      res.status(200).send({ data: user });
     })
     .catch((err) => {
       if (err.name === 'ValidationError') {

@@ -4,7 +4,7 @@ const cardModel = require('../models/card'); // Модель карты
 module.exports.getCards = (req, res) => {
   cardModel.find()
     .then((cards) => {
-      res.status(200).send(cards);
+      res.status(200).send({ cards });
     })
     .catch((err) => {
       res.status(500).send({ message: `Ошибка по умолчанию ${err.name}` });
@@ -15,9 +15,9 @@ module.exports.getCards = (req, res) => {
 module.exports.createCard = (req, res) => {
   const { name, link } = req.body;
 
-  cardModel.create({ name, link, owner: req.user._id })
+  cardModel.create({ name, link, owner: req.user._id }, { runValidators: true })
     .then((card) => {
-      res.status(201).send(card);
+      res.status(201).send({ cardId: card._id });
     })
     .catch((err) => {
       if (err.name === 'ValidationError') {
@@ -34,11 +34,11 @@ module.exports.deleteCard = async (req, res) => {
       if (!card) {
         return res.status(404).send({ message: 'Карточка с указанным айди не найдена' });
       }
-      return res.status(200).send(card);
+      return res.status(200).send({ card });
     })
     .catch((err) => {
       if (err.name === 'CastError') {
-        return res.status(404).send({ message: 'Невалидный id карточки' });
+        return res.status(400).send({ message: 'Невалидный id карточки' });
       }
       return res.satatus(500).send({ message: 'Ошибка по умолчанию' });
     });
@@ -55,7 +55,7 @@ module.exports.likeCard = (req, res) => {
       if (!card) {
         return res.status(404).send({ message: 'Передан несуществующий _id карточки' });
       }
-      return res.status(200).send(card);
+      return res.status(201).send({ data: card });
     })
     .catch((err) => {
       if (err.name === 'CastError') {
@@ -76,7 +76,7 @@ module.exports.unlikeCard = (req, res) => {
       if (!card) {
         return res.status(404).send({ message: 'Передан несуществующий _id карточки' });
       }
-      return res.status(200).send(card);
+      return res.status(200).send({ card });
     })
     .catch((err) => {
       if (err.name === 'CastError') {
