@@ -76,7 +76,7 @@ module.exports.changeUserAvatar = (req, res) => {
       if (!user) {
         return res.status(404).send({ message: 'Пользователь с указанным _id не найден' });
       }
-      return res.status(200).send(user.avatar);
+      return res.status(200).send({ avatar: user.avatar });
     })
     .catch((err) => {
       if (err.name === 'ValidationError') {

@@ -15,9 +15,10 @@ module.exports.getCards = (req, res) => {
 module.exports.createCard = (req, res) => {
   const { name, link } = req.body;
 
-  cardModel.create({ name, link, owner: req.user._id }, { runValidators: true })
+  cardModel.create({ name, link, owner: req.user._id }, { new: true, runValidators: true })
     .then((card) => {
-      res.status(201).send({ cardId: card._id });
+      console.log(card);
+      res.status(201).send({ id: card._id });
     })
     .catch((err) => {
       if (err.name === 'ValidationError') {
@@ -55,7 +56,7 @@ module.exports.likeCard = (req, res) => {
       if (!card) {
         return res.status(404).send({ message: 'Передан несуществующий _id карточки' });
       }
-      return res.status(201).send({ data: card });
+      return res.status(201).send({ card });
     })
     .catch((err) => {
       if (err.name === 'CastError') {
