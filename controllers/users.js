@@ -1,4 +1,9 @@
 const userModel = require('../models/user'); // Модель пользователя
+const {
+  userValidationError,
+  userNotValidId,
+  defaultError,
+} = require('../utils/constants');
 
 // Получить всех пользователей;
 module.exports.getUsers = (req, res) => {
@@ -6,7 +11,7 @@ module.exports.getUsers = (req, res) => {
     .then((users) => {
       res.send(users);
     })
-    .catch((err) => res.status(500).send({ message: err.message }));
+    .catch((err) => res.status(defaultError.statusCode).send({ message: `${defaultError.message} ${err.name}` }));
 };
 
 // Получить пользователя по ID;
@@ -14,17 +19,18 @@ module.exports.getUserById = (req, res) => {
   const { id } = req.params;
 
   userModel.findById(id)
+    .orFail(new Error('notValidId'))
     .then((user) => {
-      if (!user) {
-        return res.status(404).send({ message: 'Пользователь по указанному _id не найден' });
-      }
-      return res.status(200).send(user);
+      res.status(200).send(user);
     })
     .catch((err) => {
       if (err.name === 'CastError') {
-        return res.status(400).send({ message: 'Пользователь по указанному _id не найден' });
+        res.status(userValidationError.statusCode).send({ message: userValidationError.message });
+      } else if (err.message === 'notValidId') {
+        res.status(userNotValidId.statusCode).send({ message: userNotValidId.message });
+      } else {
+        res.status(defaultError.statusCode).send({ message: defaultError.message });
       }
-      return res.status(500).send({ message: 'Ошибка на стороне сервера' });
     });
 };
 
@@ -38,9 +44,11 @@ module.exports.createUser = (req, res) => {
     })
     .catch((err) => {
       if (err.name === 'ValidationError') {
-        return res.status(400).send({ message: 'Переданы некорректные данные при создании пользователя' });
+        return res.status(userValidationError.statusCode).send(
+          { message: userValidationError.message },
+        );
       }
-      return res.status(500).send({ message: 'Oops: Ошибка на стороне сервера' });
+      return res.status(defaultError.statusCode).send({ message: defaultError.message });
     });
 };
 
@@ -51,17 +59,18 @@ module.exports.changeUserProfile = (req, res) => {
     { name: req.body.name, about: req.body.about },
     { new: true, runValidators: true },
   )
+    .orFail(new Error('notValidId'))
     .then((user) => {
-      if (!user) {
-        return res.status(404).send({ message: 'Пользователь с указанным id не найден' });
-      }
-      return res.status(200).send({ data: user });
+      res.status(200).send({ data: user });
     })
     .catch((err) => {
       if (err.name === 'ValidationError') {
-        return res.status(400).send({ message: 'Переданы некорректные данные при обновлении профиля' });
+        res.status(userValidationError.statusCode).send({ message: userValidationError.message });
+      } else if (err.message === 'notValidId') {
+        res.status(userNotValidId.statusCode).send({ message: userNotValidId.message });
+      } else {
+        res.status(defaultError.statusCode).send({ message: defaultError.message });
       }
-      return res.status(500).send({ message: 'Ошибка по умолчанию' });
     });
 };
 
@@ -72,17 +81,18 @@ module.exports.changeUserAvatar = (req, res) => {
     { avatar: req.body.avatar },
     { new: true, runValidators: true },
   )
+    .orFail(new Error('notValidId'))
     .then((user) => {
-      if (!user) {
-        return res.status(404).send({ message: 'Пользователь с указанным _id не найден' });
-      }
       console.log(user.avatar);
       return res.status(200).send({ avatar: user.avatar });
     })
     .catch((err) => {
       if (err.name === 'ValidationError') {
-        return res.status(400).send({ message: 'Переданы некорректные данные при обновлении аватара' });
+        res.status(userValidationError.statusCode).send({ message: userValidationError.message });
+      } else if (err.message === 'notValidId') {
+        res.status(userNotValidId.statusCode).send({ message: userNotValidId.message });
+      } else {
+        res.status(defaultError.statusCode).send({ message: defaultError.message });
       }
-      return res.status(500).send({ message: 'Ошибка по умолчанию' });
     });
 };
