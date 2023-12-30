@@ -1,21 +1,22 @@
+const bcrypt = require('bcrypt'); // Для хеширования паролей
+const jwt = require('jsonwebtoken'); // Для создания токена
 const userModel = require('../models/user'); // Модель пользователя
-const {
-  userValidationError,
-  userNotValidId,
-  defaultError,
-} = require('../utils/constants');
+const UserValidationError = require('../errors/UserValidationError');
+const UserNotValidId = require('../errors/UserNotValidId');
+const BusyEmail = require('../errors/BusyEmail');
+const InvalidLogin = require('../errors/InvalidLogin');
 
 // Получить всех пользователей;
-module.exports.getUsers = (req, res) => {
+module.exports.getUsers = (req, res, next) => {
   userModel.find()
     .then((users) => {
       res.send(users);
     })
-    .catch((err) => res.status(defaultError.statusCode).send({ message: `${defaultError.message} ${err.name}` }));
+    .catch(next);
 };
 
 // Получить пользователя по ID;
-module.exports.getUserById = (req, res) => {
+module.exports.getUserById = (req, res, next) => {
   const { id } = req.params;
 
   userModel.findById(id)
@@ -25,35 +26,61 @@ module.exports.getUserById = (req, res) => {
     })
     .catch((err) => {
       if (err.name === 'CastError') {
-        res.status(userValidationError.statusCode).send({ message: userValidationError.message });
+        next(new UserValidationError('Переданы некорректные данные'));
       } else if (err.message === 'notValidId') {
-        res.status(userNotValidId.statusCode).send({ message: userNotValidId.message });
+        next(new UserNotValidId('Пользователь с указанным _id не найден'));
       } else {
-        res.status(defaultError.statusCode).send({ message: defaultError.message });
+        next(err);
       }
     });
 };
 
-// Создать пользователя;
-module.exports.createUser = (req, res) => {
-  const { name, about, avatar } = req.body;
+// Получить информацию о пользователе
+module.exports.getMeInfo = (req, res) => {
+  const { _id } = req.user;
 
-  userModel.create({ name, about, avatar })
+  userModel.findOne({ _id })
     .then((user) => {
-      res.status(201).send(user);
+      if (!user) {
+        throw Promise.reject(new Error('Не удалось получить пользователя'));
+      }
+      res.status(200).send(user);
+    })
+    .catch((err) => {
+      res.status(444).send({ err });
+    });
+};
+
+// Зарегистрировать пользователя;
+module.exports.createUser = (req, res, next) => {
+  bcrypt.hash(req.body.password, 10)
+    .then((hash) => userModel.create({
+      name: req.body.name,
+      about: req.body.about,
+      avatar: req.body.avatar,
+      email: req.body.email,
+      password: hash,
+    }))
+    .then((user) => {
+      res.status(201).send({
+        name: user.name,
+        about: user.about,
+        avatar: user.avatar,
+        email: user.email,
+      });
     })
     .catch((err) => {
       if (err.name === 'ValidationError') {
-        return res.status(userValidationError.statusCode).send(
-          { message: userValidationError.message },
-        );
+        next(new UserValidationError('Переданы некорректные данные'));
+      } else if (err.code === 11000) {
+        next(new BusyEmail('Пользователь с таким Email уже существует'));
       }
-      return res.status(defaultError.statusCode).send({ message: defaultError.message });
+      next(err);
     });
 };
 
 // Обновление профиля;
-module.exports.changeUserProfile = (req, res) => {
+module.exports.changeUserProfile = (req, res, next) => {
   userModel.findByIdAndUpdate(
     req.user._id,
     { name: req.body.name, about: req.body.about },
@@ -65,17 +92,17 @@ module.exports.changeUserProfile = (req, res) => {
     })
     .catch((err) => {
       if (err.name === 'ValidationError') {
-        res.status(userValidationError.statusCode).send({ message: userValidationError.message });
+        next(new UserValidationError('Переданы некорректные данные'));
       } else if (err.message === 'notValidId') {
-        res.status(userNotValidId.statusCode).send({ message: userNotValidId.message });
+        next(new UserNotValidId('Пользователь с указанным _id не найден'));
       } else {
-        res.status(defaultError.statusCode).send({ message: defaultError.message });
+        next(err);
       }
     });
 };
 
 // Обновление аватара;
-module.exports.changeUserAvatar = (req, res) => {
+module.exports.changeUserAvatar = (req, res, next) => {
   userModel.findByIdAndUpdate(
     req.user._id,
     { avatar: req.body.avatar },
@@ -88,11 +115,40 @@ module.exports.changeUserAvatar = (req, res) => {
     })
     .catch((err) => {
       if (err.name === 'ValidationError') {
-        res.status(userValidationError.statusCode).send({ message: userValidationError.message });
+        next(new UserValidationError('Переданы некорректные данные'));
       } else if (err.message === 'notValidId') {
-        res.status(userNotValidId.statusCode).send({ message: userNotValidId.message });
+        next(new UserNotValidId('Пользователь с указанным _id не найден'));
       } else {
-        res.status(defaultError.statusCode).send({ message: defaultError.message });
+        next(err);
       }
     });
+};
+
+// Логин пользователя
+module.exports.login = (req, res, next) => {
+  const { email, password } = req.body;
+
+  userModel.findOne({ email }).select('+password')
+    .then((user) => {
+      if (!user) {
+        throw new InvalidLogin('Неправильный email или пароль');
+      }
+
+      return bcrypt.compare(password, user.password).then((matched) => {
+        if (!matched) {
+          throw new InvalidLogin('Неправильный email или пароль');
+        }
+
+        return user;
+      });
+    })
+    .then((user) => {
+      const token = jwt.sign({ _id: user._id }, 'some-secret-key', { expiresIn: '7d' });
+      res.cookie('jwt', token, {
+        maxAge: 3600000 * 24 * 7,
+        httpOnly: true,
+      });
+      res.send({ jwt: token, users: user });
+    })
+    .catch(next);
 };
