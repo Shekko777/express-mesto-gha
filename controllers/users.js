@@ -6,11 +6,14 @@ const UserNotValidId = require('../errors/UserNotValidId');
 const BusyEmail = require('../errors/BusyEmail');
 const InvalidLogin = require('../errors/InvalidLogin');
 
+const { JWT_SECRET } = process.env;
+
 // Получить всех пользователей;
 module.exports.getUsers = (req, res, next) => {
   userModel.find()
     .then((users) => {
       res.send(users);
+      console.log(req.user);
     })
     .catch(next);
 };
@@ -37,9 +40,9 @@ module.exports.getUserById = (req, res, next) => {
 
 // Получить информацию о пользователе
 module.exports.getMeInfo = (req, res) => {
-  const { _id } = req.user;
+  // const { _id } = req.user;
 
-  userModel.findOne({ _id })
+  userModel.findOne({ _id: req.user._id })
     .then((user) => {
       if (!user) {
         throw Promise.reject(new Error('Не удалось получить пользователя'));
@@ -143,12 +146,12 @@ module.exports.login = (req, res, next) => {
       });
     })
     .then((user) => {
-      const token = jwt.sign({ _id: user._id }, 'some-secret-key', { expiresIn: '7d' });
+      const token = jwt.sign({ _id: user._id }, JWT_SECRET, { expiresIn: '7d' });
       res.cookie('jwt', token, {
         maxAge: 3600000 * 24 * 7,
         httpOnly: true,
       });
-      res.send({ jwt: token, users: user });
+      res.send({ jwt: token });
     })
     .catch(next);
 };
