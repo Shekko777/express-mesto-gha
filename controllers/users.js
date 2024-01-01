@@ -51,7 +51,7 @@ module.exports.getMeInfo = (req, res) => {
     });
 };
 
-// Зарегистрировать пользователя;
+// Регистрация;
 module.exports.createUser = (req, res, next) => {
   bcrypt.hash(req.body.password, 10)
     .then((hash) => userModel.create({
@@ -124,7 +124,7 @@ module.exports.changeUserAvatar = (req, res, next) => {
     });
 };
 
-// Логин пользователя
+// Логин
 module.exports.login = (req, res, next) => {
   const { email, password } = req.body;
 

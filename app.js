@@ -1,9 +1,10 @@
 const express = require('express');
 const mongoose = require('mongoose');
-const { errors } = require('celebrate');
+const { errors, celebrate, Joi } = require('celebrate');
 const appRouter = require('./routes/index');
 const { login, createUser } = require('./controllers/users');
 const { auth } = require('./middlewares/auth');
+const { linkRegex, mailRegex } = require('./utils/regexp');
 
 const { PORT = 3000 } = process.env;
 
@@ -18,8 +19,21 @@ mongoose.connect('mongodb://127.0.0.1:27017/mestodb')
 
 const app = express();
 app.use(express.json()); // Перевод данных в JSON через express;
-app.post('/signin', login);
-app.post('/signup', createUser);
+app.post('/signin', celebrate({
+  body: Joi.object().keys({
+    email: Joi.string().required().pattern(mailRegex),
+    password: Joi.string().required(),
+  }),
+}), login);
+app.post('/signup', celebrate({
+  body: Joi.object().keys({
+    name: Joi.string().min(2).max(30),
+    about: Joi.string().min(2).max(30),
+    avatar: Joi.string().required().pattern(linkRegex),
+    email: Joi.string().required().pattern(mailRegex),
+    password: Joi.string().required(),
+  }),
+}), createUser);
 app.use(auth);
 app.use(appRouter);
 app.use(errors());
