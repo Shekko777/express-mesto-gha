@@ -2,6 +2,7 @@ const cardModel = require('../models/card'); // Модель карты
 const CardValidationError = require('../errors/CardValidationError');
 const CardCastError = require('../errors/CardCastError');
 const CardNotValidId = require('../errors/CardNotValidId');
+const Forbidden = require('../errors/Forbidden');
 
 // Получить карточки;
 module.exports.getCards = (req, res, next) => {
@@ -29,20 +30,30 @@ module.exports.createCard = (req, res, next) => {
 
 // Удалить карточку;
 module.exports.deleteCard = async (req, res, next) => {
-  cardModel.findByIdAndDelete(req.params.cardId)
-    .orFail(new Error('notValidId'))
+  cardModel.findById(req.params.cardId)
     .then((card) => {
-      res.status(200).send({ card });
-    })
-    .catch((err) => {
-      if (err.name === 'CastError') {
-        next(new CardCastError('Невалидный id карточки'));
-      } else if (err.message === 'notValidId') {
-        next(new CardNotValidId('Карточка с указанным айди не найдена'));
-      } else {
-        next(err);
+      if (!card) {
+        return next(new CardValidationError('Переданы некорректные данные'));
       }
-    });
+      if (card.owner.toString() === req.user._id) {
+        return cardModel.findByIdAndDelete(req.params.cardId)
+          .then((deletedCard) => {
+            res.status(200).send({ deletedCard });
+          })
+          .catch((err) => {
+            if (err.name === 'CastError') {
+              next(new CardCastError('Невалидный id карточки'));
+            } else if (err.message === 'notValidId') {
+              next(new CardNotValidId('Карточка с указанным айди не найдена'));
+            } else {
+              next(err);
+            }
+          });
+      }
+
+      return next(new Forbidden('Отказано в доступе'));
+    })
+    .catch(next);
 };
 
 // Поставить лайк;
