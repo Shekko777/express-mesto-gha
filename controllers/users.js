@@ -14,7 +14,6 @@ module.exports.getUsers = (req, res, next) => {
   userModel.find()
     .then((users) => {
       res.send(users);
-      console.log(req.user);
     })
     .catch(next);
 };
@@ -41,14 +40,12 @@ module.exports.getUserById = (req, res, next) => {
 
 // Получить информацию о пользователе
 module.exports.getMeInfo = (req, res) => {
-  // const { _id } = req.user;
-
   userModel.findOne({ _id: req.user._id })
     .then((user) => {
       if (!user) {
         throw Promise.reject(new Error('Не удалось получить пользователя'));
       }
-      res.status(200).send(user);
+      res.status(200).send({ user });
     })
     .catch((err) => {
       res.status(444).send({ err });
@@ -114,8 +111,7 @@ module.exports.changeUserAvatar = (req, res, next) => {
   )
     .orFail(new Error('notValidId'))
     .then((user) => {
-      console.log(user.avatar);
-      return res.status(200).send({ avatar: user.avatar });
+      res.status(200).send({ avatar: user.avatar });
     })
     .catch((err) => {
       if (err.name === 'ValidationError') {
@@ -149,7 +145,7 @@ module.exports.login = (req, res, next) => {
     .then((user) => {
       const token = jwt.sign({ _id: user._id }, JWT_SECRET, { expiresIn: '7d' });
       res.cookie('jwt', token, {
-        maxAge: 3600000 * 24 * 7,
+        maxAge: 3600000,
         httpOnly: true,
       });
       res.status(200).send({ jwt: token });

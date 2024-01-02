@@ -9,7 +9,7 @@ module.exports.auth = (req, res, next) => {
     return res.status(401).send({ message: 'Необходима авторизация' });
   }
 
-  const token = req.cookies.jwt || authorization.replace('Bearer ', '');
+  const token = authorization.replace('Bearer ', '') || req.cookies.jwt;
   let payload;
 
   try {
