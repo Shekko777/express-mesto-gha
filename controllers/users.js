@@ -1,3 +1,4 @@
+require('dotenv').config();
 const bcrypt = require('bcrypt'); // Для хеширования паролей
 const jwt = require('jsonwebtoken'); // Для создания токена
 const userModel = require('../models/user'); // Модель пользователя
