@@ -1,8 +1,8 @@
-class UserNotValidId extends Error {
+class NotValidId extends Error {
   constructor(message) {
     super(message);
     this.statusCode = 404;
   }
 }
 
-module.exports = UserNotValidId;
+module.exports = NotValidId;

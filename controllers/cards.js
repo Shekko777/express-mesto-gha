@@ -1,7 +1,7 @@
 const cardModel = require('../models/card'); // Модель карты
-const CardValidationError = require('../errors/CardValidationError');
-const CardCastError = require('../errors/CardCastError');
-const CardNotValidId = require('../errors/CardNotValidId');
+// Ошибки
+const ValidationError = require('../errors/ValidationError');
+const NotValidId = require('../errors/NotValidId');
 const Forbidden = require('../errors/Forbidden');
 
 // Получить карточки;
@@ -21,7 +21,7 @@ module.exports.createCard = (req, res, next) => {
     })
     .catch((err) => {
       if (err.name === 'ValidationError') {
-        next(new CardValidationError('Переданы некорректные данные'));
+        next(new ValidationError('Переданы некорректные данные'));
       } else {
         next(err);
       }
@@ -33,7 +33,7 @@ module.exports.deleteCard = async (req, res, next) => {
   cardModel.findById(req.params.cardId)
     .then((card) => {
       if (!card) {
-        return next(new CardValidationError('Переданы некорректные данные'));
+        return next(new NotValidId('Карточка с указанным id не найдена'));
       }
       if (card.owner.toString() === req.user._id) {
         return cardModel.findByIdAndDelete(req.params.cardId)
@@ -42,9 +42,9 @@ module.exports.deleteCard = async (req, res, next) => {
           })
           .catch((err) => {
             if (err.name === 'CastError') {
-              next(new CardCastError('Невалидный id карточки'));
+              next(new ValidationError('Невалидный id карточки'));
             } else if (err.message === 'notValidId') {
-              next(new CardNotValidId('Карточка с указанным айди не найдена'));
+              next(new NotValidId('Карточка с указанным id не найдена'));
             } else {
               next(err);
             }
@@ -69,16 +69,16 @@ module.exports.likeCard = (req, res, next) => {
     })
     .catch((err) => {
       if (err.name === 'CastError') {
-        next(new CardCastError('Невалидный id карточки'));
+        next(new ValidationError('Невалидный id карточки'));
       } else if (err.message === 'notValidId') {
-        next(new CardNotValidId('Карточка с указанным айди не найдена'));
+        next(new NotValidId('Карточка с указанным айди не найдена'));
       } else {
         next(err);
       }
     });
 };
 
-// Удалит лайк карточки;
+// Удалить лайк карточки;
 module.exports.unlikeCard = (req, res, next) => {
   cardModel.findByIdAndUpdate(
     req.params.cardId,
@@ -91,9 +91,9 @@ module.exports.unlikeCard = (req, res, next) => {
     })
     .catch((err) => {
       if (err.name === 'CastError') {
-        next(new CardCastError('Невалидный id карточки'));
+        next(new ValidationError('Невалидный id карточки'));
       } else if (err.message === 'notValidId') {
-        next(new CardNotValidId('Карточка с указанным айди не найдена'));
+        next(new NotValidId('Карточка с указанным айди не найдена'));
       } else {
         next(err);
       }

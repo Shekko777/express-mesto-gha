@@ -2,55 +2,14 @@ require('dotenv').config();
 const bcrypt = require('bcrypt'); // Для хеширования паролей
 const jwt = require('jsonwebtoken'); // Для создания токена
 const userModel = require('../models/user'); // Модель пользователя
-const UserValidationError = require('../errors/UserValidationError');
-const UserNotValidId = require('../errors/UserNotValidId');
+// Ошибки
+const ValidationError = require('../errors/ValidationError');
+const NotValidId = require('../errors/NotValidId');
 const BusyEmail = require('../errors/BusyEmail');
 const InvalidLogin = require('../errors/InvalidLogin');
 
+// Секретный ключ для JWT из корневого .env
 const { JWT_SECRET } = process.env;
-
-// Получить всех пользователей;
-module.exports.getUsers = (req, res, next) => {
-  userModel.find()
-    .then((users) => {
-      res.send(users);
-    })
-    .catch(next);
-};
-
-// Получить пользователя по ID;
-module.exports.getUserById = (req, res, next) => {
-  const { id } = req.params;
-
-  userModel.findById(id)
-    .orFail(new Error('notValidId'))
-    .then((user) => {
-      res.status(200).send(user);
-    })
-    .catch((err) => {
-      if (err.name === 'CastError') {
-        next(new UserValidationError('Переданы некорректные данные'));
-      } else if (err.message === 'notValidId') {
-        next(new UserNotValidId('Пользователь с указанным _id не найден'));
-      } else {
-        next(err);
-      }
-    });
-};
-
-// Получить информацию о пользователе
-module.exports.getMeInfo = (req, res) => {
-  userModel.findOne({ _id: req.user._id })
-    .then((user) => {
-      if (!user) {
-        throw Promise.reject(new Error('Не удалось получить пользователя'));
-      }
-      res.status(200).send({ user });
-    })
-    .catch((err) => {
-      res.status(444).send({ err });
-    });
-};
 
 // Регистрация;
 module.exports.createUser = (req, res, next) => {
@@ -72,55 +31,11 @@ module.exports.createUser = (req, res, next) => {
     })
     .catch((err) => {
       if (err.name === 'ValidationError') {
-        next(new UserValidationError('Переданы некорректные данные'));
+        next(new ValidationError('Переданы некорректные данные'));
       } else if (err.code === 11000) {
         next(new BusyEmail('Пользователь с таким Email уже существует'));
       }
       next(err);
-    });
-};
-
-// Обновление профиля;
-module.exports.changeUserProfile = (req, res, next) => {
-  userModel.findByIdAndUpdate(
-    req.user._id,
-    { name: req.body.name, about: req.body.about },
-    { new: true, runValidators: true },
-  )
-    .orFail(new Error('notValidId'))
-    .then((user) => {
-      res.status(200).send({ data: user });
-    })
-    .catch((err) => {
-      if (err.name === 'ValidationError') {
-        next(new UserValidationError('Переданы некорректные данные'));
-      } else if (err.message === 'notValidId') {
-        next(new UserNotValidId('Пользователь с указанным _id не найден'));
-      } else {
-        next(err);
-      }
-    });
-};
-
-// Обновление аватара;
-module.exports.changeUserAvatar = (req, res, next) => {
-  userModel.findByIdAndUpdate(
-    req.user._id,
-    { avatar: req.body.avatar },
-    { new: true, runValidators: true },
-  )
-    .orFail(new Error('notValidId'))
-    .then((user) => {
-      res.status(200).send({ avatar: user.avatar });
-    })
-    .catch((err) => {
-      if (err.name === 'ValidationError') {
-        next(new UserValidationError('Переданы некорректные данные'));
-      } else if (err.message === 'notValidId') {
-        next(new UserNotValidId('Пользователь с указанным _id не найден'));
-      } else {
-        next(err);
-      }
     });
 };
 
@@ -151,4 +66,91 @@ module.exports.login = (req, res, next) => {
       res.status(200).send({ jwt: token });
     })
     .catch(next);
+};
+
+// Получить всех пользователей;
+module.exports.getUsers = (req, res, next) => {
+  userModel.find()
+    .then((users) => {
+      res.send(users);
+    })
+    .catch(next);
+};
+
+// Получить пользователя по ID;
+module.exports.getUserById = (req, res, next) => {
+  const { id } = req.params;
+
+  userModel.findById(id)
+    .orFail(new Error('notValidId'))
+    .then((user) => {
+      res.status(200).send(user);
+    })
+    .catch((err) => {
+      if (err.name === 'CastError') {
+        next(new ValidationError('Переданы некорректные данные'));
+      } else if (err.message === 'notValidId') {
+        next(new NotValidId('Пользователь с указанным _id не найден'));
+      } else {
+        next(err);
+      }
+    });
+};
+
+// Получить информацию о пользователе
+module.exports.getMeInfo = (req, res) => {
+  userModel.findOne({ _id: req.user._id })
+    .then((user) => {
+      if (!user) {
+        throw Promise.reject(new Error('Не удалось получить пользователя'));
+      }
+      res.status(200).send({ user });
+    })
+    .catch((err) => {
+      res.status(444).send({ err });
+    });
+};
+
+// Обновление профиля;
+module.exports.changeUserProfile = (req, res, next) => {
+  userModel.findByIdAndUpdate(
+    req.user._id,
+    { name: req.body.name, about: req.body.about },
+    { new: true, runValidators: true },
+  )
+    .orFail(new Error('notValidId'))
+    .then((user) => {
+      res.status(200).send({ data: user });
+    })
+    .catch((err) => {
+      if (err.name === 'ValidationError') {
+        next(new ValidationError('Переданы некорректные данные'));
+      } else if (err.message === 'notValidId') {
+        next(new NotValidId('Пользователь с указанным _id не найден'));
+      } else {
+        next(err);
+      }
+    });
+};
+
+// Обновление аватара;
+module.exports.changeUserAvatar = (req, res, next) => {
+  userModel.findByIdAndUpdate(
+    req.user._id,
+    { avatar: req.body.avatar },
+    { new: true, runValidators: true },
+  )
+    .orFail(new Error('notValidId'))
+    .then((user) => {
+      res.status(200).send({ avatar: user.avatar });
+    })
+    .catch((err) => {
+      if (err.name === 'ValidationError') {
+        next(new ValidationError('Переданы некорректные данные'));
+      } else if (err.message === 'notValidId') {
+        next(new NotValidId('Пользователь с указанным _id не найден'));
+      } else {
+        next(err);
+      }
+    });
 };
