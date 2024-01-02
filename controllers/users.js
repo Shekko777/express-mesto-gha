@@ -65,7 +65,7 @@ module.exports.createUser = (req, res, next) => {
       password: hash,
     }))
     .then((user) => {
-      res.status(201).send({
+      res.status(200).send({
         name: user.name,
         about: user.about,
         avatar: user.avatar,
@@ -151,7 +151,7 @@ module.exports.login = (req, res, next) => {
         maxAge: 3600000 * 24 * 7,
         httpOnly: true,
       });
-      res.send({ jwt: token });
+      res.status(200).send({ jwt: token });
     })
     .catch(next);
 };
