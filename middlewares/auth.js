@@ -1,4 +1,5 @@
 const jwt = require('jsonwebtoken');
+const InvalidLogin = require('../errors/InvalidLogin');
 
 const { JWT_SECRET } = process.env;
 
@@ -6,7 +7,7 @@ module.exports.auth = (req, res, next) => {
   const { authorization } = req.headers;
 
   if (!authorization) {
-    return res.status(401).send({ message: 'Необходима авторизация' });
+    return next(new InvalidLogin('Необходима авторизация'));
   }
 
   const token = authorization.replace('Bearer ', '') || req.cookies.jwt;
@@ -15,7 +16,7 @@ module.exports.auth = (req, res, next) => {
   try {
     payload = jwt.verify(token, JWT_SECRET);
   } catch (err) {
-    return res.status(401).send({ message: 'Необходима авторизация' });
+    return next(new InvalidLogin('Необходима авторизация'));
   }
 
   req.user = payload;

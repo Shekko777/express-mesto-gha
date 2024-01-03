@@ -40,7 +40,7 @@ app.use(appRouter);
 app.use(errors());
 app.use((err, req, res, next) => {
   const statusCode = err.statusCode || 500;
-  const errMessage = err.message || 'Ошибка на сервере по умолчанию';
+  const errMessage = err.message || 'На сервере произошла ошибка';
   res.status(statusCode).send({ message: errMessage });
   next();
 });
